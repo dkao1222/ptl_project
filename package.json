@@ -1,0 +1,23 @@
+{
+  "name": "ptl_project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dkao1222/ptl_project.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dkao1222/ptl_project/issues"
+  },
+  "homepage": "https://github.com/dkao1222/ptl_project#readme",
+  "dependencies": {
+    "express": "^4.21.2",
+    "http": "^0.0.1-security"
+  }
+}
