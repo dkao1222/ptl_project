@@ -55,6 +55,7 @@ function setup_div_layer(sub_id, div_array) {
 function setup_func_layer(sub_id, function_id, data_text) {
     d3.select(`#func_${sub_id}_area-${function_id}`)
     .append("div")
+    
     .attr("class", "sub-block")
     .style('display', 'flex')
     .style('flex-direction', 'column')  // 垂直居中
@@ -75,41 +76,69 @@ function setup_func_layer(sub_id, function_id, data_text) {
     .on("click", () => button_submit(data_text));  // 点击事件
     
 }
-function setup_func_h_append_button(sub_id, function_id, data_array) {
-    // 选择目标区域
+
+
+function setup_func_h_append_button(sub_id, function_id, data_array, input_positions = [], input_settings = {}) {
+    // 目標區域
     const container = d3.select(`#func_${sub_id}_area-${function_id}`);
  
-    // 让父容器使用横向排列
+    // 讓父容器使用橫向排列
     container.style("display", "flex")
-        .style("flex-direction", "row")  // 横向排列
-        .style("gap", "10px");  // 按钮之间的间距
-     // 遍历 data_array，创建多个按钮
-     data_array.forEach(data_text => {
-         // 创建按钮外层 div
-         const buttonContainer = container.append("div")
-             .attr("class", "sub-block")
-             .style("display", "flex")
-             .style("align-items", "center") // 水平居中
-             .style("justify-content", "center")
-             .style("width", "120px")  // 按钮固定宽度
-             .style("height", "50px");  // 按钮固定高度
+        .style("flex-direction", "row")  // 橫向排列
+        .style("gap", "10px")  // 按鈕和輸入框之間的間距
+        .style("align-items", "center");  // 保持垂直對齊
+
+    data_array.forEach((data_text, index) => {
+        // 如果 input 應該出現在這個按鈕的左邊，則先添加 input
+        if (input_positions.includes(`${index}-left`)) {
+            add_input(container, input_settings[`${index}-left`] || {});
+        }
+
+        // 創建按鈕外層 div
+        const buttonContainer = container.append("div")
+            .attr("class", "sub-block")
+            .style("display", "flex")
+            .style("align-items", "center")  // 水平居中
+            .style("justify-content", "center")
+            .style("width", "120px")  // 按鈕固定寬度
+            .style("height", "50px");  // 按鈕固定高度
+
+        // 添加按鈕
+        buttonContainer.append("button")
+            .text(data_text)
+            .style("width", "100%")  // 按鈕填滿 div
+            .style("height", "100%")
+            .style("font-size", "1rem")  
+            .style("font-weight", "bold")  
+            .style("border", "none")  
+            .style("background-color", "#007bff")  
+            .style("color", "white")  
+            .style("border-radius", "8px")  
+            .style("cursor", "pointer")  
+            .on("click", () => button_submit(data_text));  // 點擊事件
+        
+        // 如果 input 應該出現在這個按鈕的右邊，則添加 input
+        if (input_positions.includes(`${index}-right`)) {
+            add_input(container, input_settings[`${index}-right`] || {});
+        }
+    });
+}
+
+// **額外的 input 生成函數**
+function add_input(container, settings) {
+    container.append("input")
+        .attr("type", settings.type || "text")  // 預設為 text
+        .attr("placeholder", settings.placeholder || "輸入內容")  // 預設提示文本
+        .style("width", "200px")  // 輸入框寬度
+        .style("height", "40px")
+        .style("font-size", "1rem")
+        .style("border", "1px solid #ccc")
+        .style("border-radius", "5px")
+        .style("padding", "5px");
+}
+
+
  
-         // 添加按钮
-         buttonContainer.append("button")
-             .text(data_text)
-             .style("width", "100%")  // 按钮填满 div
-             .style("height", "100%")
-             .style("font-size", "1rem")  
-             .style("font-weight", "bold")  
-             .style("border", "none")  
-             .style("background-color", "#007bff")  
-             .style("color", "white")  
-             .style("border-radius", "8px")  
-             .style("cursor", "pointer")  
-             .on("click", () => button_submit(data_text));  // 点击事件
-     });
-     
- }
 function sub_selection(sub_id, function_id, data) {
     let options = d3.select(`#func_${sub_id}_area-${function_id}`)
     .append("div")
@@ -136,7 +165,10 @@ function sub_selection(sub_id, function_id, data) {
 setup_main_grap([1])
 
 setup_div_layer(1,[0.1,0.9] )
-setup_func_h_append_button(1,1, ['Import','Start','Pause','End'])
+setup_func_h_append_button(1,1, ['Start','Pause','End','Import'], ['3-right'],{
+    '3-right': { type: 'file', placeholder: '選取檔案' }
+})
+//setTimeout(() => add_input_next_to_buttons(1, 1), 500);
 //setup_func_layer(1,1, 'Pick')
 //setup_func_layer(1,2, 'Drop')
 
