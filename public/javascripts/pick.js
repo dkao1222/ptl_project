@@ -79,63 +79,99 @@ function setup_func_layer(sub_id, function_id, data_text) {
 
 
 function setup_func_h_append_button(sub_id, function_id, data_array, input_positions = [], input_settings = {}) {
-    // 目標區域
     const container = d3.select(`#func_${sub_id}_area-${function_id}`);
- 
-    // 讓父容器使用橫向排列
+
     container.style("display", "flex")
-        .style("flex-direction", "row")  // 橫向排列
-        .style("gap", "10px")  // 按鈕和輸入框之間的間距
-        .style("align-items", "center");  // 保持垂直對齊
+        .style("flex-direction", "row")
+        .style("gap", "10px")
+        .style("align-items", "center");
+
+    let inputElements = {}; 
 
     data_array.forEach((data_text, index) => {
-        // 如果 input 應該出現在這個按鈕的左邊，則先添加 input
-        if (input_positions.includes(`${index}-left`)) {
-            add_input(container, input_settings[`${index}-left`] || {});
+        let inputKeyRight = `${index}-right`;
+
+        // 如果 input 應該出現在這個按鈕的右邊，則添加 input (例如: 檔案選擇)
+        if (input_positions.includes(inputKeyRight)) {
+            inputElements[inputKeyRight] = add_input(container, input_settings[inputKeyRight] || {});
         }
 
-        // 創建按鈕外層 div
+        // 建立按鈕外層 div
         const buttonContainer = container.append("div")
             .attr("class", "sub-block")
             .style("display", "flex")
-            .style("align-items", "center")  // 水平居中
+            .style("align-items", "center")
             .style("justify-content", "center")
-            .style("width", "120px")  // 按鈕固定寬度
-            .style("height", "50px");  // 按鈕固定高度
+            .style("width", "120px")
+            .style("height", "50px");
 
         // 添加按鈕
-        buttonContainer.append("button")
+        const button = buttonContainer.append("button")
             .text(data_text)
-            .style("width", "100%")  // 按鈕填滿 div
+            .style("width", "100%")
             .style("height", "100%")
-            .style("font-size", "1rem")  
-            .style("font-weight", "bold")  
-            .style("border", "none")  
-            .style("background-color", "#007bff")  
-            .style("color", "white")  
-            .style("border-radius", "8px")  
-            .style("cursor", "pointer")  
-            .on("click", () => button_submit(data_text));  // 點擊事件
-        
-        // 如果 input 應該出現在這個按鈕的右邊，則添加 input
-        if (input_positions.includes(`${index}-right`)) {
-            add_input(container, input_settings[`${index}-right`] || {});
+            .style("font-size", "1rem")
+            .style("font-weight", "bold")
+            .style("border", "none")
+            .style("background-color", "#007bff")
+            .style("color", "white")
+            .style("border-radius", "8px")
+            .style("cursor", "pointer");
+
+        // **如果是 Import 按鈕，綁定點擊事件來選擇檔案**
+        if (data_text === "Import") {
+            const fileInput = inputElements[inputKeyRight];
+
+            button.on("click", () => {
+                fileInput.node().click(); // 觸發檔案選擇
+            });
+
+            fileInput.on("change", function () {
+                const file = this.files[0];
+                if (file) {
+                    uploadFile(file);
+                }
+            });
+        } else {
+            button.on("click", () => button_submit(data_text));  // 其他按鈕點擊
         }
     });
 }
 
-// **額外的 input 生成函數**
+// **新增輸入框函數 (包含 file input)**
 function add_input(container, settings) {
-    container.append("input")
+    return container.append("input")
         .attr("type", settings.type || "text")  // 預設為 text
-        .attr("placeholder", settings.placeholder || "輸入內容")  // 預設提示文本
-        .style("width", "200px")  // 輸入框寬度
+        .attr("placeholder", settings.placeholder || "輸入內容")
+        .style("width", "200px")
         .style("height", "40px")
         .style("font-size", "1rem")
         .style("border", "1px solid #ccc")
         .style("border-radius", "5px")
-        .style("padding", "5px");
+        .style("padding", "5px")
+        .style("display", settings.type === "file" ? "none" : "inline-block"); // 隱藏 file input
 }
+
+// **上傳檔案的函數**
+function uploadFile(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/import_file", {
+        method: "POST",
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Upload Success:", data);
+        alert("檔案上傳成功：" + data.filename);
+    })
+    .catch(error => {
+        console.error("Upload Error:", error);
+        alert("上傳失敗，請重試");
+    });
+}
+
 
 
  
@@ -173,6 +209,11 @@ setup_func_h_append_button(1,1, ['Start','Pause','End','Import'], ['3-right'],{
 //setup_func_layer(1,2, 'Drop')
 
 function button_submit(task){
-    console.log(task)
-    alert(task)
+    cconsole.log(task)
+
+    switch(task) {
+        case 'Pick':
+            window.location.href = '/import_file'
+            break
+    }
 }
