@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%=title%></title>
+    <script type="text/javascript" src="/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="/d3/d3.min.js"></script>
+</head>
+<body>
+    <h1>SmartView<a href="/" target="_self">Home</a></h1>
+    <%switch(options) {
+        case 'ptl':%>
+        <script type="module" src="/public/javascripts/ptl.js"></script>
+            <%break
+        case 'dashboard':%>
+        <script type="module" src="/public/javascripts/dashboard.js"></script>
+            <%break
+        case 'system':%>
+        <script type="module" src="/public/javascripts/system.js"></script>
+            <%break
+        case 'pick':%>
+        <script type="module" src="/public/javascripts/pick.js"></script>
+            <%break
+        case 'drop':%>
+        <script type="module" src="/public/javascripts/drop.js"></script>
+            <%break
+        default:%>
+        <script type="module" src="/public/javascripts/main.js"></script>
+        <%break
+
+    } %>
+    
+    <script>
+        
+    </script>
+</body>
+</html>
