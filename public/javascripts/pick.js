@@ -157,7 +157,7 @@ function uploadFile(file) {
     const formData = new FormData();
     formData.append("file", file);
 
-    fetch("/import_file", {
+    fetch("/pick/import_file", {
         method: "POST",
         body: formData,
     })
@@ -198,6 +198,50 @@ function sub_selection(sub_id, function_id, data) {
 
 }
 
+function sub_table(sub_id, function_id, jsonData) {
+    let container = d3.select(`#func_${sub_id}_area-${function_id}`);
+    // 先清空旧表格（防止重复创建）
+    container.selectAll("table").remove();
+
+    // 创建 table
+    let table = container.append("table")
+        .attr("class", "data-table")
+        .style("width", "100%")
+        .style("border-collapse", "collapse")
+        .style("text-align", "center");
+
+    // 取 JSON 的 key 作为表头
+    let columns = Object.keys(jsonData[0]);
+    // 创建表头
+    let thead = table.append("thead").append("tr");
+    thead.selectAll("th")
+        .data(columns)
+        .enter()
+        .append("th")
+        .text(d => d) // 表头名称
+        .style("border", "1px solid black")
+        .style("padding", "8px")
+        .style("background-color", "#007bff")
+        .style("color", "white");
+
+    // 创建表格主体
+    let tbody = table.append("tbody");
+
+    // 填充表格数据
+    let rows = tbody.selectAll("tr")
+        .data(jsonData)
+        .enter()
+        .append("tr");
+
+    rows.selectAll("td")
+        .data(row => columns.map(column => row[column])) // 取 JSON 值
+        .enter()
+        .append("td")
+        .text(d => d)
+        .style("border", "1px solid black")
+        .style("padding", "8px");
+}
+
 setup_main_grap([1])
 
 setup_div_layer(1,[0.1,0.9] )
@@ -207,6 +251,16 @@ setup_func_h_append_button(1,1, ['Start','Pause','End','Import'], ['3-right'],{
 //setTimeout(() => add_input_next_to_buttons(1, 1), 500);
 //setup_func_layer(1,1, 'Pick')
 //setup_func_layer(1,2, 'Drop')
+
+$.ajax({
+    url: '/task/Pick_order',
+    method:'GET',
+    success: function(response){
+        sub_table(1, 2, response)
+    }
+
+})
+
 
 function button_submit(task){
     cconsole.log(task)

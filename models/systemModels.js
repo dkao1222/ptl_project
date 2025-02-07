@@ -1,5 +1,6 @@
 //const sqlite3 = require('sqlite3').verbose();
-const db = require('../models/database')
+const path = require('path')
+const db = require(path.resolve(__dirname,'../models/database'))
 
 const systemModels = {
     get_client: (callback) => {

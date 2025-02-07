@@ -24,27 +24,7 @@ db.serialize(() => {
         status TEXT CHECK(status IN ('ON', 'OFF')),
         press_time DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
-    db.run(`CREATE TABLE if not exists "task_temp" (
-        "id"	INTEGER UNIQUE,
-        "task_id"	TEXT,
-        "task_type"	TEXT,
-        "location_type"	TEXT,
-        "location_bin"	TEXT,
-        "order_numberlo"	TEXT,
-        "po_number"	TEXT,
-        "sku_name"	TEXT,
-        "sku_description"	TEXT,
-        "qty"	NUMERIC(18,4) CHECK(qty>0),
-        "order_createtime"	TIMESTAMP,
-        "po_createtime"	TIMESTAMP,
-        "order_priority"	INTEGER CHECK(order_priority<=999),
-        "task_priority"	INTEGER CHECK(task_priority<=999),
-        "esp_id"	TEXT,
-        "start_time"	TIMESTAMP,
-        "end_time"	TIMESTAMP,
-        "status"	TEXT,
-        PRIMARY KEY("id" AUTOINCREMENT)
-    );`)
+    
     db.run(`CREATE TABLE if not exists "task_status" (
         "id"	INTEGER UNIQUE,
         "task_id"	TEXT,
@@ -55,15 +35,16 @@ db.serialize(() => {
         "po_number"	TEXT,
         "sku_name"	TEXT,
         "sku_description"	TEXT,
-        "qty"	NUMERIC(18,4) CHECK(qty>0),
+        "qty"	NUMERIC(18,4),
         "order_createtime"	TIMESTAMP,
         "po_createtime"	TIMESTAMP,
-        "order_priority"	INTEGER CHECK(order_priority<=999),
-        "task_priority"	INTEGER CHECK(task_priority<=999),
+        "order_priority"	INTEGER ,
+        "task_priority"	INTEGER ,
         "esp_id"	TEXT,
         "start_time"	TIMESTAMP,
         "end_time"	TIMESTAMP,
-        "status"	TEXT,
+        "status"	TEXT DEFAULT 'Not Completed' CHECK(status IN ('Completed', 'Not Completed')),
+        Import_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY("id" AUTOINCREMENT)
     );`)
 
