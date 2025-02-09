@@ -54,3 +54,7 @@ function setup_div_layer(sub_id, div_array) {
 
 setup_main_grap([0.4,0.6])
 setup_div_layer(1, [0.1,0.1,0.8])
+function button_submit(task){
+  console.log(task)
+  alert(task)
+}
