@@ -1,3 +1,4 @@
+//const socket = io();  // 连接到服务器
 function setup_main_grap(div_array) {
     
     d3.select('body').append('div').attr('class','col').attr('id','my_dataviz')
@@ -16,9 +17,9 @@ function setup_main_grap(div_array) {
     .append("div")
     .attr("class", "block")
     .style("flex", d => d) // 根據比例分配空間
-    .style("border", "1px solid #000")  // 添加邊框
-    .style("padding", "20px")  // 設置內邊距
-    .style("box-sizing", "border-box")  // 使邊框和內邊距包含在區塊尺寸內
+    //.style("border", "1px solid #000")  // 添加邊框
+    //.style("padding", "20px")  // 設置內邊距
+    //.style("box-sizing", "border-box")  // 使邊框和內邊距包含在區塊尺寸內
     .attr('id', (d ,i) => `map_area-${i + 1}`)
     //.text(d => `區塊 ${d * 100}%`);  // 顯示比例
 
@@ -45,9 +46,9 @@ function setup_div_layer(sub_id, div_array) {
     .attr('class', 'inner-block')
     .style('flex', d => d)
     .attr('id', (d ,i) => `func_${sub_id}_area-${i + 1}`)
-    .style('border', '1px solid #000')
-    .style('box-sizing', 'border-box')
-    .style('padding', '10px')
+    //.style('border', '1px solid #000')
+    //.style('box-sizing', 'border-box')
+    //.style('padding', '10px')
     //.text((d, i) => `子區塊 ${i + 1} (比例: ${d * 100}%)`);
     
 }
@@ -199,6 +200,13 @@ function sub_selection(sub_id, function_id, data) {
 }
 
 function sub_table(sub_id, function_id, jsonData) {
+    console.log(jsonData)
+    // 如果 jsonData 为空或未定义，则打印错误并返回
+    if (!jsonData || !Array.isArray(jsonData) || jsonData.length === 0) {
+        console.error("Invalid jsonData provided to sub_table:", jsonData);
+        return; // 退出函数，防止后续代码执行
+    }
+
     let container = d3.select(`#func_${sub_id}_area-${function_id}`);
     // 先清空旧表格（防止重复创建）
     container.selectAll("table").remove();
@@ -212,6 +220,7 @@ function sub_table(sub_id, function_id, jsonData) {
 
     // 取 JSON 的 key 作为表头
     let columns = Object.keys(jsonData[0]);
+
     // 创建表头
     let thead = table.append("thead").append("tr");
     thead.selectAll("th")
@@ -242,11 +251,12 @@ function sub_table(sub_id, function_id, jsonData) {
         .style("padding", "8px");
 }
 
+
 setup_main_grap([1])
 
 setup_div_layer(1,[0.1,0.9] )
-setup_func_h_append_button(1,1, ['Start','Pause','End','Import'], ['3-right'],{
-    '3-right': { type: 'file', placeholder: '選取檔案' }
+setup_func_h_append_button(1,1, ['Start','Setting','Import'], ['2-right'],{
+    '2-right': { type: 'file', placeholder: '選取檔案' }
 })
 //setTimeout(() => add_input_next_to_buttons(1, 1), 500);
 //setup_func_layer(1,1, 'Pick')
@@ -257,17 +267,39 @@ $.ajax({
     method:'GET',
     success: function(response){
         sub_table(1, 2, response)
+    },
+    error: function(err){
+        console.log(err)
     }
 
 })
 
 
+
+// 监听服务器推送的数据
+socket.on('file-uploaded', function(data) {
+    console.log(data); // 用来调试，确保数据格式正确
+
+    if (data && data.success) {
+        // 确保返回的数据是数组，并传递给 `sub_table` 函数
+        if (Array.isArray(data.data)) {
+            sub_table(1, 2, data.data);  // 传递更新的数据
+        } else {
+            console.error('Invalid data format: Expected an array');
+        }
+    } else {
+        console.error('No data or failure message received');
+    }
+});
+
+
+
 function button_submit(task){
-    cconsole.log(task)
+    console.log(task)
 
     switch(task) {
-        case 'Pick':
-            window.location.href = '/import_file'
+        case 'Start':
+            window.location.href = '/task/pick_start'
             break
     }
 }

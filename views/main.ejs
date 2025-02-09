@@ -6,9 +6,15 @@
     <title><%=title%></title>
     <script type="text/javascript" src="/jquery/dist/jquery.min.js"></script>
     <script type="text/javascript" src="/d3/d3.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="/public/javascripts/function.js"></script>
+    <script>
+        const socket = io();  // 连接到服务器
+    </script>
 </head>
 <body>
     <h1>SmartView<a href="/" target="_self">Home</a></h1>
+    
     <%switch(options) {
         case 'ptl':%>
         <script type="module" src="/public/javascripts/ptl.js"></script>
@@ -24,6 +30,9 @@
             <%break
         case 'drop':%>
         <script type="module" src="/public/javascripts/drop.js"></script>
+        <%break
+        case 'Pick_start':%>
+        <script type="module" src="/public/javascripts/start.js"></script>
             <%break
         default:%>
         <script type="module" src="/public/javascripts/main.js"></script>
