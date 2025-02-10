@@ -43,7 +43,7 @@ db.serialize(() => {
         "esp_id"	TEXT,
         "start_time"	TIMESTAMP,
         "end_time"	TIMESTAMP,
-        "status"	TEXT DEFAULT 'Not Completed' CHECK(status IN ('Completed', 'Not Completed')),
+        "status"	TEXT DEFAULT 'Not Completed' CHECK(status IN ('Completed', 'Not Completed','In Progress')),
         Import_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY("id" AUTOINCREMENT)
     );`)

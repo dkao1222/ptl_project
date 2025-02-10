@@ -60,6 +60,7 @@ function setup_func_layer(sub_id, function_id, data_text) {
     .style('flex-direction', 'column')  // 垂直居中
     .style("align-items", "center") // 水平居中
     .style("justify-content", "center") 
+    .style("height", "100%")
     .style('width', '100%')  // 宽度 100% 填满父元素
     .append("button")
     .text(data_text)

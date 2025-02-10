@@ -58,3 +58,37 @@ function button_submit(task){
   console.log(task)
   alert(task)
 }
+
+
+function showTaskInput(sub_id, function_id) {
+  d3.select(`#func_${sub_id}_area-${function_id}`)
+  d3.select(`#func_${sub_id}_area-${function_id}`).select('.sub-block').append("h2").text("请输入 Task ID 或 SKU");
+  const form = d3.select(`#func_${sub_id}_area-${function_id}`).append("div").attr("id", "inputForm");
+  form.append("input")
+  .attr("type", "text")
+  .attr("id", "taskInput")
+  .style("height", "100%")
+  .style("width", "70%")
+  .style("font-size", "1.2em")
+  .attr("placeholder", "请输入 Task ID 或 SKU")
+  .on("keypress", function(event) {
+      if (event.key === "Enter") {
+          submitTaskInput(d3.select("#taskInput").property("value"));
+      }
+  });;
+  
+  form.append("button")
+  .attr("id", "submitBtn")
+  .style("height", "100%")
+  .style("width", "20%")
+  .style("font-size", "1.2em")
+  .text("提交")
+  .on("click", function() {
+    submitTaskInput(d3.select("#taskInput").property("value"));
+  });
+}
+
+showTaskInput(1,1)
+document.addEventListener("DOMContentLoaded", function() {
+
+})

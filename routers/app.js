@@ -6,7 +6,7 @@ const ejs = require("ejs");
 
 
 require('../models/database')
-const checkOfflineDevices = require('../util/checkOffline')
+//const checkOfflineDevices = require('../util/checkOffline')
 
 const systemRouter = require('../routers/systemRouter')
 const ptlRoter = require('../routers/ptlRouter')
@@ -16,7 +16,7 @@ const importRouter = require('../routers/importRouter')
 
 const startRouter = require('../routers/startRouter')
 
-
+const taskRouter = require('../routers/taskControlRouter')
 const heartRouter = require('../routers/heartRouter')
 
 const app = express();
@@ -43,7 +43,7 @@ app.use('/',pickRouter)
 app.use('/',importRouter)
 
 app.use('/',startRouter)
-
+app.use('/',taskRouter)
 
 
 app.get('/', function(req, res) {

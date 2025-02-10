@@ -1,76 +1,59 @@
-const connectDB = require('../models/database');
+// taskController.js - 任务控制器，按照 MVC 结构优化
+
+const db = require('../models/database');
+const taskModel = require('../models/taskModels');
 
 const taskController = {
     assignTask: async (req, res) => {
         try {
-            const db = await connectDB();
+            // 获取所有在线的 ESP 设备
+            const onlineEspIds = await taskModel.getOnlineESP();
+            if (!onlineEspIds.length) return res.status(400).json({ error: "没有在线的 ESP 设备" });
 
-            // 取出一个未完成的任务
-            const task = await db.get(`
-                SELECT * FROM task_status 
-                WHERE status = 'Not Completed' 
-                ORDER BY task_priority DESC, order_priority DESC, order_createtime ASC 
-                LIMIT 1
-            `);
+            // 获取所有未完成任务
+            let pendingTasks = await taskModel.getMultiplePendingTasks();
+            if (!pendingTasks.length) return res.status(400).json({ error: "没有待处理任务" });
 
-            if (!task) return res.status(400).send({ error: "没有待处理任务" });
+            // 任务分配队列，只有 ESP 设备完成任务后才会分配新任务
+            let assignedTasks = {};
+            let availableEsps = [...onlineEspIds];
 
-            let conditionColumn = null;
-            let conditionValue = null;
+            for (let task of pendingTasks) {
+                if (availableEsps.length === 0) break; // 等待 ESP 设备完成任务后再分配
+                
+                let esp_id = availableEsps.shift(); // 取出空闲的 ESP 设备
+                assignedTasks[esp_id] = task;
 
-            // 选择唯一的匹配条件
-            if (task.order_numberlo) {
-                conditionColumn = "order_numberlo";
-                conditionValue = task.order_numberlo;
-            } else if (task.po_number) {
-                conditionColumn = "po_number";
-                conditionValue = task.po_number;
-            } else if (task.sku_name) {
-                conditionColumn = "sku_name";
-                conditionValue = task.sku_name;
-            } else if (task.location_type) {
-                conditionColumn = "location_type";
-                conditionValue = task.location_type;
+                await taskModel.assignTaskToESP(esp_id, task.id);
+                await taskModel.updateESPStatus(esp_id, 'busy');
+                console.log(`✅ 任务 ${task.task_id} 分配给 ESP: ${esp_id}`);
             }
 
-            if (!conditionColumn || !conditionValue) {
-                return res.status(400).send({ error: "任务缺少匹配条件" });
+            // 监听 ESP 任务完成状态
+            taskModel.listenForTaskCompletion(async (esp_id) => {
+                if (pendingTasks.length > 0) {
+                    let nextTask = pendingTasks.shift();
+                    await taskModel.assignTaskToESP(esp_id, nextTask.id);
+                    await taskModel.updateESPStatus(esp_id, 'busy');
+                    console.log(`✅ 任务 ${nextTask.task_id} 重新分配给 ESP: ${esp_id}`);
+                } else {
+                    await taskModel.updateESPStatus(esp_id, 'online');
+                }
+            });
+
+            // 触发 WebSocket 事件，通知前端更新
+            const io = req.app.get('io');
+            if (io) {
+                io.emit('update-task', { success: true, assignments: assignedTasks });
             }
 
-            // 查找是否有 ESP 已经在处理相同条件的任务
-            let assignedEsp = await db.get(`
-                SELECT esp_id FROM task_status 
-                WHERE status = 'In Progress' 
-                AND ${conditionColumn} = ? 
-                LIMIT 1
-            `, [conditionValue]);
-
-            let esp_id = assignedEsp ? assignedEsp.esp_id : null;
-
-            // 如果没有找到匹配的 ESP32，就找一个空闲的
-            if (!esp_id) {
-                let newEsp = await db.get("SELECT esp_id FROM esp_status WHERE status = 'idle' ORDER BY last_seen DESC");
-                if (!newEsp) return res.status(400).send({ error: "没有可用的 ESP32 设备" });
-
-                esp_id = newEsp.esp_id;
-            }
-
-            // 将该任务分配给该 ESP
-            await db.run(`
-                UPDATE task_status 
-                SET esp_id = ?, start_time = CURRENT_TIMESTAMP, status = 'In Progress' 
-                WHERE id = ?
-            `, [esp_id, task.id]);
-
-            // 更新 ESP 设备状态
-            await db.run("UPDATE esp_status SET status = 'busy' WHERE esp_id = ?", [esp_id]);
-
-            console.log(`✅ 任务 ${task.task_id} 分配给 ESP: ${esp_id}`);
-            res.send({ success: true, esp_id, assigned_task: task });
+            res.json({ success: true, assignments: assignedTasks });
 
         } catch (err) {
             console.error("❌ 任务分配错误:", err);
-            res.status(500).send({ error: "服务器错误" });
+            res.status(500).json({ error: "服务器错误" });
         }
     }
 };
+
+module.exports = taskController;
