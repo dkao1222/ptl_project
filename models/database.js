@@ -14,6 +14,7 @@ db.serialize(() => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         esp_id TEXT unique,
         enable text CHECK(enable IN ('ON', 'OFF')),
+        work_status default 'idle',
         status TEXT DEFAULT 'offline',
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);

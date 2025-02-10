@@ -16,7 +16,7 @@ const taskModel = {
 
     getOnlineESP: () => {
         return new Promise((resolve, reject) => {
-            db.all(`SELECT esp_id FROM esp_status WHERE status = 'online' ORDER BY last_updated DESC`,
+            db.all(`SELECT esp_id FROM esp_status WHERE status = 'online' AND work_status = 'idle' ORDER BY last_updated DESC`,
                 [], (err, rows) => {
                     if (err) reject(err);
                     else resolve(rows.map(row => row.esp_id));
@@ -36,7 +36,7 @@ const taskModel = {
 
     updateESPStatus: (esp_id, status) => {
         return new Promise((resolve, reject) => {
-            db.run(`UPDATE esp_status SET status = ? WHERE esp_id = ?`,
+            db.run(`UPDATE esp_status SET work_status = ? WHERE esp_id = ?`,
                 [status, esp_id], function(err) {
                     if (err) reject(err);
                     else resolve();
@@ -46,7 +46,7 @@ const taskModel = {
 
     listenForTaskCompletion: (callback) => {
         setInterval(() => {
-            db.all(`SELECT esp_id FROM esp_status WHERE status = 'busy'`, [], (err, rows) => {
+            db.all(`SELECT esp_id FROM esp_status WHERE work_status = 'busy'`, [], (err, rows) => {
                 if (err) {
                     console.error("❌ 任务完成状态检查错误:", err);
                     return;

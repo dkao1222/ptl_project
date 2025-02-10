@@ -1,3 +1,5 @@
+
+
 // taskController.js - 任务控制器，按照 MVC 结构优化
 
 const db = require('../models/database');
@@ -37,7 +39,7 @@ const taskController = {
                     await taskModel.updateESPStatus(esp_id, 'busy');
                     console.log(`✅ 任务 ${nextTask.task_id} 重新分配给 ESP: ${esp_id}`);
                 } else {
-                    await taskModel.updateESPStatus(esp_id, 'online');
+                    await taskModel.updateESPStatus(esp_id, 'idle');
                 }
             });
 
