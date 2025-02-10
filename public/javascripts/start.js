@@ -88,7 +88,4 @@ function showTaskInput(sub_id, function_id) {
   });
 }
 
-showTaskInput(1,1)
-document.addEventListener("DOMContentLoaded", function() {
-
-})
+showTaskInput(1,2)

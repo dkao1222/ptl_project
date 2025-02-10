@@ -4,13 +4,20 @@ const db = require('../models/database')
 
 // taskModel.js - 任务模型
 const taskModel = {
-    getMultiplePendingTasks: () => {
+    getTasksByInput: (taskInput) => {
         return new Promise((resolve, reject) => {
-            db.all(`SELECT * FROM task_status WHERE status = 'Not Completed' ORDER BY task_priority DESC, order_priority DESC, order_createtime ASC`,
-                [], (err, rows) => {
+            db.all(
+                `SELECT *, DENSE_RANK() OVER (ORDER BY task_priority DESC, order_priority DESC, order_createtime ASC) as rank 
+                 FROM task_status 
+                 WHERE (task_id = ? OR sku_name = ?) 
+                 AND status = 'Not Completed' 
+                 ORDER BY rank`,
+                [taskInput, taskInput],
+                (err, rows) => {
                     if (err) reject(err);
                     else resolve(rows);
-                });
+                }
+            );
         });
     },
 
@@ -42,25 +49,6 @@ const taskModel = {
                     else resolve();
                 });
         });
-    },
-
-    listenForTaskCompletion: (callback) => {
-        setInterval(() => {
-            db.all(`SELECT esp_id FROM esp_status WHERE work_status = 'busy'`, [], (err, rows) => {
-                if (err) {
-                    console.error("❌ 任务完成状态检查错误:", err);
-                    return;
-                }
-                rows.forEach(row => {
-                    let esp_id = row.esp_id;
-                    db.get(`SELECT COUNT(*) AS pending FROM task_status WHERE esp_id = ? AND status = 'In Progress'`, [esp_id], (err, result) => {
-                        if (!err && result.pending === 0) {
-                            callback(esp_id);
-                        }
-                    });
-                });
-            });
-        }, 5000); // 每 5 秒检查一次任务完成情况
     }
 };
 
