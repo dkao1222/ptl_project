@@ -1,13 +1,12 @@
 const express = require('express');
-
-//const systemControllers = require('../controllers/systemControllers');
-//const systemModels = require('../models/systemModels');
-
-const taskController = require('../controllers/taslController')
+const taskController = require('../controllers/taslController');
 
 const router = express.Router();
 
-router.post('/task/pick_assign', taskController.assignTask)
-router.get('/task/put_mode')
+// **🔥 任务分配**
+router.post('/task/pick_assign', taskController.assignTask);
 
-module.exports = router
+// **🔥 任务完成**
+router.post('/task/complete_task', taskController.completeTask);
+
+module.exports = router;

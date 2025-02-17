@@ -299,14 +299,7 @@ function button_submit(task){
 
     switch(task) {
         case 'Start':
-            $.ajax({
-                url:'/task/pick_assign',
-                method: 'POST',
-                success: function(response){
-                    console.log(response)
-                    window.location.href = '/task/pick_start'
-                }
-            })
+            window.location.href = '/task/pick_start'
             
             break
     }

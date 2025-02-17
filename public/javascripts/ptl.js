@@ -66,8 +66,7 @@ function setup_func_layer(sub_id, function_id, data_text) {
     .text(data_text)
     .style("width", "100%")  // **按钮填满整个 div**
     .style("height", "100%")  // **按钮填满整个 div**
-    .style("font-size", "2vw")  // **文字大小自适应（根据视口宽度变化）**
-    .style("font-weight", "bold")  // 文字加粗
+    .style("font-size", "2vw")  // **文字大小自适应（根据视口宽度变化）**    .style("font-weight", "bold")  // 文字加粗
     .style("border", "none")  // 去掉默认边框
     .style("background-color", "#007bff")  // 按钮背景色
     .style("color", "white")  // 文字颜色
