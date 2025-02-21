@@ -6,7 +6,7 @@ const taskController = {
         try {
             console.log("📡 正在获取任务...");
 
-            // **🔥 获取所有 "Not Completed" 任务**
+            // **🔥 获取所有 "未完成" 任务**
             let tasks = await taskModel.getPendingTasks();
             if (!tasks.length) return res.status(400).json({ error: "未找到待处理任务" });
 
@@ -15,28 +15,28 @@ const taskController = {
             if (!availableEsps.length) return res.status(400).json({ error: "没有空闲的 ESP 设备" });
 
             let assignedTasks = {};
-            let taskQueue = [...tasks];  // 任务队列
-            let espQueue = [...availableEsps]; // ESP 设备队列
+            let taskQueue = [...tasks];
+            let espQueue = [...availableEsps];
 
             while (taskQueue.length > 0 && espQueue.length > 0) {
                 let task = taskQueue.shift();  // 取出一个任务
                 let esp = espQueue.shift();    // 取出一个 ESP 设备
 
+                // **🔥 分配任务到 ESP**
                 await taskModel.assignTaskToESP(esp.esp_id, task.id);
                 await taskModel.updateESPStatus(esp.esp_id, 'busy');
 
-                console.log("📡 分配的任务数据:", assignedTasks);
                 assignedTasks[esp.esp_id] = task;
+
+                // **🔥 通过 WebSocket 发送任务**
+                const io = req.app.get("io");
+                if (io && esp.socket_id) {
+                    console.log(`📡 发送任务到 ESP ${esp.esp_id} - Socket ID: ${esp.socket_id}`);
+                    io.to(esp.socket_id).emit("task-assigned", { success: true, task });
+                }
             }
 
             console.log("✅ 任务分配完成:", assignedTasks);
-
-            // **🔥 通过 Socket.IO 发送任务到前端**
-            const io = req.app.get("io");
-            if (io) {
-                io.emit("update-task", { success: true, assignments: assignedTasks });
-            }
-
             res.json({ success: true, assignments: assignedTasks });
 
         } catch (err) {
@@ -56,28 +56,23 @@ const taskController = {
             await taskModel.markTaskCompleted(task_id);
             await taskModel.updateESPStatus(esp_id, 'idle');
 
-            // **🔥 检查是否有新的任务可以分配**
+            // **🔥 通过 WebSocket 通知任务完成**
+            const io = req.app.get("io");
+            if (io) {
+                io.emit("task-completed", { success: true, esp_id, task_id });
+            }
+
+            // **🔥 检查是否有新的任务**
             let nextTask = await taskModel.getNextPendingTask();
             if (nextTask) {
                 await taskModel.assignTaskToESP(esp_id, nextTask.id);
                 await taskModel.updateESPStatus(esp_id, 'busy');
 
-                // **🔥 通知前端任务已分配**
-                const io = req.app.get("io");
                 if (io) {
-                    io.emit("update-task", {
-                        success: true,
-                        newAssignment: { esp_id, task: nextTask }
-                    });
+                    io.to(esp_id).emit("task-assigned", { success: true, task: nextTask });
                 }
             } else {
-                console.log(`🟢 没有新的任务分配给 ESP ${esp_id}`);
-            }
-
-            // **🔥 通过 Socket.IO 发送任务完成通知**
-            const io = req.app.get("io");
-            if (io) {
-                io.emit("task-completed", { success: true, esp_id, task_id });
+                console.log(`🟢 没有新的任务可分配`);
             }
 
             res.json({ success: true, message: "任务完成" });
