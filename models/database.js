@@ -13,6 +13,7 @@ db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS esp_status (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         esp_id TEXT unique,
+        socket_id TEXT DEFAULT NULL,
         enable text CHECK(enable IN ('ON', 'OFF')),
         work_status default 'idle',
         status TEXT DEFAULT 'offline',
@@ -22,6 +23,7 @@ db.serialize(() => {
     db.run(`CREATE table if not exists button_press (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         esp_id TEXT,
+        socket_id TEXT,
         status TEXT CHECK(status IN ('ON', 'OFF')),
         press_time DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
@@ -42,6 +44,7 @@ db.serialize(() => {
         "order_priority"	INTEGER ,
         "task_priority"	INTEGER ,
         "esp_id"	TEXT,
+        socket_id TEXT,
         "start_time"	TIMESTAMP,
         "end_time"	TIMESTAMP,
         "status"	TEXT DEFAULT 'Not Completed' CHECK(status IN ('Completed', 'Not Completed','In Progress')),

@@ -1,4 +1,9 @@
 //const socket = io();  // 连接到服务器
+
+const socket = io("http://192.168.0.143:8080", {
+    transports: ["websocket"],  // ✅ 强制 WebSocket 传输
+});
+
 function setup_main_grap(div_array) {
     
     d3.select('body').append('div').attr('class','col').attr('id','my_dataviz')
