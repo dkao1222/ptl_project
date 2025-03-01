@@ -1,14 +1,13 @@
 #include <WiFi.h>
-#include <HTTPClient.h>
 #include <ArduinoWebsockets.h>
 #include <ArduinoJson.h>
 #include <FastLED.h>
 
 using namespace websockets;
 
-#define LED_PIN 12       // WS2812 数据引脚
-#define NUM_LEDS 10      // LED 数量
-#define MICROSWITCH_PIN 12  // 定义微动开关 GPIO
+#define LED_PIN 12          // WS2812 LED 数据引脚
+#define NUM_LEDS 10         // LED 數量
+#define BUTTON_PIN 14       // 自動復位開關（任務完成確認）
 
 CRGB leds[NUM_LEDS];
 
@@ -21,7 +20,6 @@ const char* heartbeatUrl = "http://192.168.0.143:8080/heartbeat_mode";
 
 WebsocketsClient client;
 String esp_id = "";
-unsigned long lastReconnectAttempt = 0;
 
 /** 📡 获取 ESP32 唯一 ID **/
 String getChipID() {
@@ -29,10 +27,35 @@ String getChipID() {
     return String((uint32_t)(chipid >> 32), HEX) + String((uint32_t)chipid, HEX);
 }
 
-/** 🔆 LED 控制 **/
+/** 🔆 LED 狀態控制 **/
 void setLEDColor(CRGB color) {
     fill_solid(leds, NUM_LEDS, color);
     FastLED.show();
+}
+
+/** 📡 發送 HTTP 心跳 **/
+void sendHeartbeat() {
+    if (WiFi.status() == WL_CONNECTED) {
+        HTTPClient http;
+        http.begin(heartbeatUrl);
+        http.addHeader("Content-Type", "application/json");
+
+        String payload = "{\"esp_id\":\"" + esp_id + "\"}";
+        Serial.println("📡 正在发送 HTTP 心跳: " + payload);
+
+        int httpResponseCode = http.POST(payload);
+        Serial.println("📡 HTTP 心跳回應: " + String(httpResponseCode));
+
+        if (httpResponseCode > 0) {
+            Serial.println("✅ 心跳成功发送");
+        } else {
+            Serial.println("❌ 心跳发送失败: " + String(httpResponseCode));
+        }
+
+        http.end();
+    } else {
+        Serial.println("❌ WiFi 断开，无法发送 HTTP 心跳");
+    }
 }
 
 /** 📩 处理服务器消息 **/
@@ -42,54 +65,54 @@ void onMessageCallback(WebsocketsMessage message) {
 
     String data = message.data();
 
-    // **🔥 过滤非 JSON 数据**
     if (!data.startsWith("42[")) {
         Serial.println("⚠️ 非任务相关消息，跳过...");
         return;
     }
 
-    // **🔥 去除 Socket.IO 前缀 `42`**
     data = data.substring(2);
 
-    // **🔥 解析 JSON**
     DynamicJsonDocument doc(1024);
     DeserializationError error = deserializeJson(doc, data);
+
     if (error) {
-        Serial.println("❌ JSON 解析失败: " + String(error.c_str()));
+        Serial.print("❌ JSON 解析失败: ");
+        Serial.println(error.f_str());
         return;
     }
 
-    // **🔥 解析事件**
     String event = doc[0].as<String>();
+
     if (event == "task-assigned") {
         String task_id = doc[1]["task_id"].as<String>();
         Serial.printf("📌 任务分配: %s\n", task_id.c_str());
 
-        // **🔥 任务状态指示**
-        setLEDColor(CRGB::Green);  // **任务分配 → 绿色**
-        delay(1000);
-        setLEDColor(CRGB::Yellow); // **任务执行中 → 黄色**
-        //delay(5000); // **模拟任务执行**
-
-        Serial.println("🔄 等待微动开关按下确认任务完成...");
-        while (digitalRead(MICROSWITCH_PIN) == HIGH) {
-            delay(100);  // 持续检查
+        // **🔥 任务开始：黄色**
+        setLEDColor(CRGB::Yellow);
+        Serial.println("🔄 等待按鈕按下确认任务完成...");
+        
+        // **🔥 等待按鈕按下**
+        while (digitalRead(BUTTON_PIN) == HIGH) {
+            delay(100);
         }
-
-        Serial.println("✅ 微动开关触发，任务完成！");
+        
+        Serial.println("✅ 按钮按下，任务完成！");
 
         // **🔥 发送任务完成通知**
         String completeTaskJson = "42[\"task-completed\", {\"esp_id\":\"" + esp_id + "\", \"task_id\":\"" + task_id + "\"}]";
         client.send(completeTaskJson);
         Serial.println("✅ 任务完成通知已发送");
 
-        // **🔥 任务完成 → 白色闪烁**
+        // **🔥 完成後閃爍白燈 3 次**
         for (int i = 0; i < 3; i++) {
             setLEDColor(CRGB::White);
             delay(500);
             setLEDColor(CRGB::Black);
             delay(500);
         }
+
+        // **🔥 回到藍燈（待機狀態）**
+        setLEDColor(CRGB::Blue);
     } else {
         Serial.println("⚠️ 未知事件，跳过...");
     }
@@ -99,27 +122,30 @@ void onMessageCallback(WebsocketsMessage message) {
 void onEventsCallback(WebsocketsEvent event, String data) {
     if (event == WebsocketsEvent::ConnectionOpened) {
         Serial.println("✅ WebSocket 连接成功！");
-        setLEDColor(CRGB::Blue); // **连接成功 → 蓝色**
-
-        // 🔥 **发送 `device-connect` 事件，确保服务器正确识别**
+        setLEDColor(CRGB::Blue); // **待機（藍燈）**
         client.send("42[\"device-connect\", {\"esp_id\":\"" + esp_id + "\"}]");
         sendPing();
     } else if (event == WebsocketsEvent::ConnectionClosed) {
         Serial.println("❌ WebSocket 断开连接，尝试重新连接...");
-        setLEDColor(CRGB::Red); // **断开连接 → 红色**
+        setLEDColor(CRGB::Red); // **異常（紅燈閃爍）**
     }
 }
-
 
 /** ✅ 连接 WebSocket **/
 bool connectWebSocket() {
     Serial.println("🔄 连接 WebSocket 服务器...");
+
+    if (client.available()) {
+        Serial.println("✅ WebSocket 仍然连接中，跳过重连...");
+        return true;
+    }
 
     String ws_url = String("ws://") + serverHost + ":" + String(serverPort) + socketPath;
     bool connected = client.connect(ws_url);
 
     if (connected) {
         Serial.println("✅ WebSocket 已成功连接！");
+        sendPing();
     } else {
         Serial.println("❌ WebSocket 连接失败！");
     }
@@ -133,26 +159,13 @@ void sendPing() {
     Serial.println("📡 已发送 Ping");
 }
 
-/** 📡 发送 HTTP 心跳 **/
-void sendHeartbeat() {
-    if (WiFi.status() == WL_CONNECTED) {
-        HTTPClient http;
-        http.begin(heartbeatUrl);
-        http.addHeader("Content-Type", "application/json");
-
-        String payload = "{\"esp_id\":\"" + esp_id + "\"}";
-        int httpResponseCode = http.POST(payload);
-        Serial.println("📡 心跳回應: " + String(httpResponseCode));
-        http.end();
-    }
-}
-
 void setup() {
     Serial.begin(115200);
-    pinMode(MICROSWITCH_PIN, INPUT_PULLUP);  // 微动开关默认 HIGH
+    pinMode(BUTTON_PIN, INPUT_PULLUP);  // **自動復位開關**
+    
     // **🔆 初始化 LED**
     FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
-    setLEDColor(CRGB::Black); // **🔥 设备启动，LED 关闭**
+    setLEDColor(CRGB::Black); // **設備啟動，LED 关闭**
     
     // **📶 连接 WiFi**
     WiFi.begin(ssid, password);
@@ -174,28 +187,35 @@ void setup() {
 
     // **🔄 连接 WebSocket**
     connectWebSocket();
+
+    // **发送 HTTP 心跳**
+    sendHeartbeat();
 }
 
 void loop() {
-    client.poll();  // ✅ 持续监听 WebSocket 消息
-
     static unsigned long lastPingTime = 0;
     static unsigned long lastHeartbeatTime = 0;
+    static unsigned long lastReconnectAttempt = 0;
 
-    if (millis() - lastPingTime > 600000) {  // ✅ 10分钟发送 `ping`
+    if (millis() - lastPingTime > 600000) {  // **10 分钟发送 `ping`**
         sendPing();
         lastPingTime = millis();
     }
 
-    if (millis() - lastHeartbeatTime > 300000) {  // ✅ 5分钟发送 `HTTP 心跳`
+    if (millis() - lastHeartbeatTime > 300000) {  // **5 分钟发送 HTTP 心跳**
         sendHeartbeat();
         lastHeartbeatTime = millis();
     }
 
-    // **🔥 断线后，每 5 秒尝试重新连接**
-    if (!client.available() && millis() - lastReconnectAttempt > 5000) {
-        Serial.println("❌ WebSocket 未连接，5 秒后尝试重新连接...");
-        delay(5000);
+    if (!client.available() && millis() - lastReconnectAttempt > 10000) {  
+        Serial.println("❌ WebSocket 未连接，10 秒后尝试重新连接...");
+        lastReconnectAttempt = millis();
         connectWebSocket();
     }
+
+    if (client.available()) {
+        client.poll();
+    }
+
+    delay(100);
 }

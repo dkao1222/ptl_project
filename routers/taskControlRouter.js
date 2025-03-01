@@ -9,4 +9,6 @@ router.post('/task/pick_assign', taskController.assignTask);
 // **🔥 任务完成**
 router.post('/task/complete_task', taskController.completeTask);
 
+router.post('/task/validate_task', taskController.validateTask);
+
 module.exports = router;

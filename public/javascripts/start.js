@@ -135,32 +135,33 @@ function showTaskInput(sub_id, function_id, esp_id, task_id) {
 // **🔥 任务提交**
 function submitTaskInput(esp_id, task_id, taskInput) {
     if (!taskInput) {
-        alert("请输入 Task ID 或 SKU");
+        alert("❌ 请输入 Task ID 或 SKU");
         return;
     }
 
     console.log("🚀 发送任务完成确认:", taskInput);
 
-    fetch('/task/complete_task', {
+    fetch('/task/validate_task', {  // 🔥 先检查任务 ID 是否匹配
         method: 'POST',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ esp_id, task_id })
+        body: JSON.stringify({ esp_id, task_id, taskInput })
     })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log("✅ 任务已完成:", data);
-                alert("任务完成");
-                assignTask();
-            } else {
-                console.error("❌ 任务完成失败:", data);
-                alert("任务完成失败: " + data.error);
-            }
-        })
-        .catch(error => {
-            console.error("❌ 任务完成请求失败:", error);
-            alert("任务完成请求失败，请检查日志");
-        });
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("✅ 任务 ID 匹配成功！请按下 ESP 上的确认按钮以完成任务。");
+
+            // 🔥 通知 ESP 设备任务已匹配，等待按鈕確認
+            socket.emit("task-confirmation", { esp_id, task_id });
+
+        } else {
+            alert("❌ 任务 ID 不匹配，请检查输入！");
+        }
+    })
+    .catch(error => {
+        console.error("❌ 任务确认请求失败:", error);
+        alert("任务确认请求失败，请检查日志");
+    });
 }
 
 // **🔥 页面加载时自动分配任务**

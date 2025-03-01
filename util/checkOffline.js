@@ -16,7 +16,9 @@ function checkOfflineDevices() {
     );
 }
 
+let timeer = 30 * 60 * 1000
+
 // 每 10 秒執行一次
-setInterval(checkOfflineDevices, 30000);
+setInterval(checkOfflineDevices, timeer);
 
 module.exports = checkOfflineDevices;

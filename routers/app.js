@@ -6,7 +6,7 @@ const ejs = require("ejs");
 
 
 require('../models/database')
-//const checkOfflineDevices = require('../util/checkOffline')
+const checkOfflineDevices = require('../util/checkOffline')
 
 const systemRouter = require('../routers/systemRouter')
 const ptlRoter = require('../routers/ptlRouter')
