@@ -82,37 +82,27 @@ void onMessageCallback(WebsocketsMessage message) {
     }
 
     String event = doc[0].as<String>();
+    if (event == "task-confirmation") {
+        String received_task_id = doc[1]["task_id"].as<String>();
 
-    if (event == "task-assigned") {
-        String task_id = doc[1]["task_id"].as<String>();
-        Serial.printf("📌 任务分配: %s\n", task_id.c_str());
+        Serial.printf("📌 任务 %s 需要确认，等待按鈕按下...\n", received_task_id.c_str());
 
-        // **🔥 任务开始：黄色**
-        setLEDColor(CRGB::Yellow);
-        Serial.println("🔄 等待按鈕按下确认任务完成...");
-        
-        // **🔥 等待按鈕按下**
-        while (digitalRead(BUTTON_PIN) == HIGH) {
-            delay(100);
+        setLEDColor(CRGB::Yellow);  // 🔥 提示需要確認，黃燈閃爍
+        while (digitalRead(BUTTON_PIN) == HIGH) { 
+            delay(100);  // 等待按鈕被按下
         }
-        
+
         Serial.println("✅ 按钮按下，任务完成！");
 
         // **🔥 发送任务完成通知**
-        String completeTaskJson = "42[\"task-completed\", {\"esp_id\":\"" + esp_id + "\", \"task_id\":\"" + task_id + "\"}]";
+        String completeTaskJson = "42[\"task-completed\", {\"esp_id\":\"" + esp_id + "\", \"task_id\":\"" + received_task_id + "\"}]";
         client.send(completeTaskJson);
         Serial.println("✅ 任务完成通知已发送");
 
-        // **🔥 完成後閃爍白燈 3 次**
-        for (int i = 0; i < 3; i++) {
-            setLEDColor(CRGB::White);
-            delay(500);
-            setLEDColor(CRGB::Black);
-            delay(500);
-        }
-
-        // **🔥 回到藍燈（待機狀態）**
-        setLEDColor(CRGB::Blue);
+        // **🔥 任务完成 → 綠燈**
+        setLEDColor(CRGB::Green);
+        delay(2000);
+        setLEDColor(CRGB::Black);  // 熄滅燈光
     } else {
         Serial.println("⚠️ 未知事件，跳过...");
     }
